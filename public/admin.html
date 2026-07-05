@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard Admin</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        background: #f4f6f9;
+        padding: 20px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .card h3 {
+        color: #666;
+        margin-bottom: 10px;
+      }
+
+      .card span {
+        font-size: 30px;
+        font-weight: bold;
+        color: #667eea;
+      }
+
+      .actions {
+        margin-bottom: 20px;
+      }
+
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+
+      th {
+        background: #667eea;
+        color: white;
+      }
+
+      .hadir {
+        color: green;
+        font-weight: bold;
+      }
+
+      .edit {
+        background: orange;
+      }
+
+      .hapus {
+        background: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📊 Dashboard Admin Absensi</h1>
+
+    <div class="cards">
+      <div class="card">
+        <h3>Total Mahasiswa</h3>
+        <span id="totalMhs">0</span>
+      </div>
+
+      <div class="card">
+        <h3>Hadir Hari Ini</h3>
+        <span id="hadirHariIni">0</span>
+      </div>
+
+      <div class="card">
+        <h3>Total Absensi</h3>
+        <span id="totalAbsensi">0</span>
+      </div>
+
+      <div class="card">
+        <h3>Pertemuan</h3>
+        <span>16</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button onclick="tambahMahasiswa()">➕ Tambah Mahasiswa</button>
+
+      <button onclick="downloadExcel()">📥 Download Excel</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>NPM</th>
+          <th>Nama</th>
+          <th>Prodi</th>
+          <th>Kehadiran</th>
+          <th>Tanggal</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+
+      <tbody id="data"></tbody>
+    </table>
+
+    <script>
+      fetch("/admin-data")
+        .then((res) => res.json())
+        .then((data) => {
+          let tbody = document.getElementById("data");
+
+          document.getElementById("totalMhs").innerText = data.length;
+
+          let hadirHariIni = 0;
+
+          data.forEach((item) => {
+            if (item.status) {
+              hadirHariIni++;
+            }
+
+            tbody.innerHTML += `
+<tr>
+
+<td>${item.npm}</td>
+
+<td>${item.nama}</td>
+
+<td>${item.prodi || "-"}</td>
+
+<td>
+${item.jumlah_hadir || 0}/16
+</td>
+
+<td>
+${item.tanggal || "-"}
+</td>
+
+<td class="hadir">
+${item.status ? "✅ Hadir" : "❌ Belum"}
+</td>
+
+<td>
+
+<button class="edit"
+onclick="editMahasiswa('${item.id}')">
+✏ Edit
+</button>
+
+<button class="hapus"
+onclick="hapusMahasiswa('${item.id}')">
+🗑 Hapus
+</button>
+
+</td>
+
+</tr>
+`;
+          });
+
+          document.getElementById("hadirHariIni").innerText = hadirHariIni;
+
+          document.getElementById("totalAbsensi").innerText = hadirHariIni;
+        });
+
+      function tambahMahasiswa() {
+        location.href = "/tambah-mahasiswa";
+      }
+
+      function editMahasiswa(id) {
+        location.href = "/edit-mahasiswa/" + id;
+      }
+
+      function hapusMahasiswa(id) {
+        if (confirm("Hapus mahasiswa?")) {
+          fetch("/hapus-mahasiswa/" + id, {
+            method: "DELETE",
+          }).then(() => {
+            location.reload();
+          });
+        }
+      }
+
+      function downloadExcel() {
+        window.location = "/download-excel";
+      }
+    </script>
+  </body>
+</html>

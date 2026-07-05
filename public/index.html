@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Absensi QR</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      .expired {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrapper">
+      <div class="header">
+        <img src="logo.png" class="logo" />
+
+        <h1>ScanTI</h1>
+
+        <p>Barcode Attendance System</p>
+      </div>
+
+      <h2 class="judul">ABSENSI MAHASISWA</h2>
+
+      <p class="sub">Silakan pilih nama untuk melakukan absensi</p>
+
+      <div class="card" id="card">
+        <div class="kelas">
+          <div>
+            <span>Mata Kuliah</span>
+            <h3>IT Project Portfolio</h3>
+          </div>
+        </div>
+
+        <label> Pilih Mahasiswa </label>
+
+        <select id="mahasiswa"></select>
+        <button id="btnAbsen" onclick="absen()">Absen Sekarang</button>
+        <div class="info-box">
+          <h3>Pastikan data sudah benar</h3>
+
+          <p>Setelah menekan tombol absen, data tidak dapat diubah.</p>
+        </div>
+
+        <div class="timer-box">
+          <div>
+            <h3>QR Aktif</h3>
+
+            <p>QR akan expired dalam</p>
+          </div>
+
+          <div class="count">
+            <span id="timerNumber"> 10 </span>
+
+            <div>Detik</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-info">
+        <div>
+          <h3>Informasi</h3>
+
+          <p>Absensi hanya dapat dilakukan saat QR Code masih aktif.</p>
+        </div>
+      </div>
+
+      <footer>© 2026 ScanTI - Sistem Absensi Mahasiswa</footer>
+    </div>
+
+    <script>
+      // =========================
+      // DEVICE ID
+      // =========================
+
+      const device_id = localStorage.getItem("device_id") || generateID();
+
+      localStorage.setItem("device_id", device_id);
+
+      function generateID() {
+        return "dev-" + Math.random().toString(36).substr(2, 9);
+      }
+
+      // =========================
+      // AMBIL TOKEN QR
+      // =========================
+
+      const urlParams = new URLSearchParams(window.location.search);
+
+      const token = urlParams.get("token");
+
+      // =========================
+      // VALIDASI TOKEN
+      // =========================
+
+      if (!token) {
+        document.body.innerHTML = `
+
+  <div style="
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    background:#667eea;
+    color:white;
+    font-family:Arial;
+  ">
+
+  <h1>❌ QR Tidak Valid</h1>
+
+  </div>
+
+  `;
+      }
+
+      // =========================
+      // LOAD MAHASISWA
+      // =========================
+
+      fetch("/mahasiswa")
+        .then((res) => res.json())
+
+        .then((data) => {
+          let select = document.getElementById("mahasiswa");
+
+          select.innerHTML =
+            "<option disabled selected>Pilih Mahasiswa</option>";
+
+          data.forEach((mhs) => {
+            let opt = document.createElement("option");
+
+            opt.value = JSON.stringify(mhs);
+
+            opt.text = `${mhs.npm} - ${mhs.nama}`;
+
+            select.appendChild(opt);
+          });
+        })
+
+        .catch((err) => {
+          alert("Gagal mengambil data mahasiswa");
+        });
+
+      // =========================
+      // TIMER EXPIRED
+      // =========================
+
+      let timeLeft = 10;
+
+      const timer = document.getElementById("timer");
+
+      const btn = document.getElementById("btnAbsen");
+
+      const card = document.getElementById("card");
+
+      const countdown = setInterval(() => {
+        document.getElementById("timerNumber").innerText = timeLeft;
+
+        timeLeft--;
+
+        if (timeLeft < 0) {
+          clearInterval(countdown);
+
+          btn.disabled = true;
+
+          card.classList.add("expired");
+          document.getElementById("timerNumber").innerText = "0";
+
+          alert("QR sudah expired, silakan scan ulang");
+        }
+      }, 1000);
+
+      // =========================
+      // ABSEN
+      // =========================
+
+      function absen() {
+        // cek expired
+
+        if (timeLeft < 0) {
+          alert("QR sudah expired");
+
+          return;
+        }
+
+        const dropdown = document.getElementById("mahasiswa");
+
+        if (!dropdown.value) {
+          alert("Pilih mahasiswa");
+
+          return;
+        }
+
+        btn.disabled = true;
+
+        btn.innerText = "Memproses...";
+
+        let selected = JSON.parse(dropdown.value);
+
+        fetch("/absen", {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            nama: selected.nama,
+
+            npm: selected.npm,
+
+            device_id: device_id,
+
+            token: token,
+          }),
+        })
+          .then((res) => res.json())
+
+          .then((data) => {
+            if (data.status == "success") {
+              alert("✅ Absensi berhasil");
+
+              location.reload();
+            } else {
+              alert("❌ " + data.message);
+
+              btn.disabled = false;
+
+              btn.innerText = "Absen Sekarang";
+            }
+          })
+
+          .catch((err) => {
+            alert("Server error");
+
+            btn.disabled = false;
+
+            btn.innerText = "Absen Sekarang";
+          });
+      }
+    </script>
+  </body>
+</html>

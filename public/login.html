@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Login Admin</title>
+
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #667eea;
+        font-family: Arial;
+      }
+
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        width: 350px;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        background: #667eea;
+        color: white;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>Login Admin</h2>
+
+      <input id="username" placeholder="Username" />
+
+      <input id="password" type="password" placeholder="Password" />
+
+      <button onclick="login()">Login</button>
+    </div>
+
+    <script>
+      async function login() {
+        const username = document.getElementById("username").value;
+
+        const password = document.getElementById("password").value;
+
+        const res = await fetch("/login", {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            username,
+            password,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          location.href = "/dashboard";
+        } else {
+          alert(data.message);
+        }
+      }
+    </script>
+  </body>
+</html>
